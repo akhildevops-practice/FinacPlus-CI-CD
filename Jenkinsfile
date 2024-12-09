@@ -15,15 +15,17 @@ pipeline {
             steps {
                 script {
                     // Build the Docker image
-                    sh 'docker build -t $DOCKER_IMAGE .'
+                    sh 'docker build -t spring-boot-demo .'
                 }
             }
         }
-        stage('Push Docker Image to Docker Hub') {
+       stage('Push Docker Image') {
             steps {
                 script {
-                    // Push the Docker image to Docker Hub
-                    sh 'docker push $DOCKER_IMAGE'
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'
+                        sh 'docker push spring-boot-demo'
+                    }
                 }
             }
         }
