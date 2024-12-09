@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-boot-demo-deployment
+  labels:
+    app: spring-boot-demo
+spec:
+  replicas: 1  # You can scale this number as per your needs
+  selector:
+    matchLabels:
+      app: spring-boot-demo
+  template:
+    metadata:
+      labels:
+        app: spring-boot-demo
+    spec:
+      containers:
+        - name: spring-boot-demo
+          image: akhilprabhu2005/spring-boot-demo:latest  # Docker image from Docker Hub
+          ports:
+            - containerPort: 8080
+

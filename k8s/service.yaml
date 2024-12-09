@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: spring-boot-demo-service
+spec:
+  selector:
+    app: spring-boot-demo
+  ports:
+    - protocol: TCP
+      port: 80  # The port on which the service will be exposed
+      targetPort: 8080  # The port the application listens on
+  type: LoadBalancer  # For exposing the service externally (via Minikube or MetalLB)
+
