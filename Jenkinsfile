@@ -1,59 +1,94 @@
 pipeline {
-    agent any
-    environment {
-        DOCKER_IMAGE = 'akhilprabhu2005/spring-boot-demo:latest'  // Your Docker image name
-        K8S_NAMESPACE = 'default'  // Change to your Kubernetes namespace if necessary
+  agent {
+    docker {
+      image 'abhishekf5/maven-abhishek-docker-agent:v1'
+      args '--user root -v /var/run/docker.sock:/var/run/docker.sock' // Mount Docker socket to access the host's Docker daemon
     }
-    stages {
-        stage('Clone Repository') {
-            steps {
-                // Clone the repository
-                git 'https://github.com/akhildevops-practice/FinacPlus-CI-CD.git'
-            }
-        }
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    // Build the Docker image
-                    sh 'docker build -t $DOCKER_IMAGE .'
-                }
-            }
-        }
-        stage('Push Docker Image to Docker Hub') {
-            steps {
-                script {
-                    // Push the Docker image to Docker Hub
-                    sh 'docker push $DOCKER_IMAGE'
-                }
-            }
-        }
-        stage('Deploy to Kubernetes') {
-            steps {
-                script {
-                    // Apply Kubernetes deployment and service files
-                    sh 'kubectl apply -f k8s/deployment.yaml'
-                    sh 'kubectl apply -f k8s/service.yaml'
-                }
-            }
-        }
-        stage('Verify Deployment') {
-            steps {
-                script {
-                    // Verify the deployment
-                    sh 'kubectl get pods'
-                    sh 'kubectl get services'
-                }
-            }
-        }
+  }
+  stages {
+    stage('Checkout') {
+      steps {
+        echo 'Checking out the code'
+        git branch: 'main', url: 'https://github.com/akhildevops-practice/FinacPlus-CI-CD.git'
+      }
     }
-    post {
-        success {
-            echo 'Deployment to Kubernetes was successful!'
-        }
-        failure {
-            echo 'Deployment failed.'
-        }
+
+    stage('Build and Test') {
+      steps {
+        echo 'Listing project files'
+        sh 'ls -ltr'
+        
+        // Build the project and create a JAR file
+        echo 'Building the Spring Boot app'
+        sh 'cd spring-boot-app && mvn clean package'
+      }
     }
+
+    stage('Static Code Analysis') {
+      environment {
+        SONAR_URL = "http://your-sonarqube-server-url:9000"
+      }
+      steps {
+        withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
+          echo 'Running SonarQube static code analysis'
+          sh 'cd spring-boot-app && mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
+        }
+      }
+    }
+
+    stage('Build and Push Docker Image') {
+      environment {
+        DOCKER_IMAGE = "akhilprabhu2005/spring-boot-app:${BUILD_NUMBER}"
+        REGISTRY_CREDENTIALS = credentials('docker-hub')
+      }
+      steps {
+        echo 'Building Docker image'
+        script {
+          sh 'cd spring-boot-app && docker build -t ${DOCKER_IMAGE} .'
+          
+          // Push image to Docker Hub
+          def dockerImage = docker.image("${DOCKER_IMAGE}")
+          docker.withRegistry('https://index.docker.io/v1/', "docker-hub") {
+            echo 'Pushing Docker image to registry'
+            dockerImage.push()
+          }
+        }
+      }
+    }
+
+    stage('Update Deployment File') {
+      environment {
+        GIT_REPO_NAME = "FinacPlus-CI-CD"
+        GIT_USER_NAME = "akhilprabhu20"
+      }
+      steps {
+        withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
+          echo 'Updating Kubernetes deployment file with new image tag'
+          sh '''
+            git config user.email "akhilprabhu20@gmail.com"
+            git config user.name "akhilprabhu20"
+            BUILD_NUMBER=${BUILD_NUMBER}
+            sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" kubernetes/deployment.yml
+            git add kubernetes/deployment.yml
+            git commit -m "Update deployment image to version ${BUILD_NUMBER}"
+            git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+          '''
+        }
+      }
+    }
+
+    stage('Deploy to Kubernetes') {
+      steps {
+        echo 'Deploying to Kubernetes'
+        script {
+          // Apply Kubernetes manifests (e.g., deployment and service)
+          sh 'kubectl apply -f kubernetes/deployment.yml'
+          sh 'kubectl apply -f kubernetes/service.yml'
+        }
+      }
+    }
+  }
 }
+
 
 
