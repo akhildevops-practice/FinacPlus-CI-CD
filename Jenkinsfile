@@ -63,7 +63,47 @@ pipeline {
             sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" kubernetes/deployment.yml
             git add kubernetes/deployment.yml
             git commit -m "Update deployment image to version ${BUILD_NUMBER}"
-            git push https://${GITHUB_TOKEN}@github.com/${GIT_USER
+            git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+          '''
+        }
+      }
+    }
+
+    stage('Deploy to Kubernetes') {
+      steps {
+        echo 'Deploying to Kubernetes'
+        script {
+          sh '''
+            kubectl apply -f kubernetes/deployment.yml
+            kubectl apply -f kubernetes/service.yml
+          '''
+        }
+      }
+    }
+
+    stage('Verify Deployment') {
+      steps {
+        echo 'Verifying deployment'
+        script {
+          sh '''
+            kubectl get pods
+            kubectl get services
+          '''
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      echo 'Pipeline executed successfully!'
+    }
+    failure {
+      echo 'Pipeline execution failed.'
+    }
+  }
+}
+
 
 
 
