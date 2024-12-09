@@ -15,7 +15,7 @@ pipeline {
             steps {
                 script {
                     // Build the Docker image
-                    sh 'docker build -t spring-boot-demo .'
+                    sh 'docker build -t akhilprabhu2005/spring-boot-demo  .'
                 }
             }
         }
