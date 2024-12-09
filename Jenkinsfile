@@ -13,16 +13,14 @@ pipeline {
       }
     }
 
-    stage('Build and Test') {
-      steps {
-        echo 'Listing project files'
-        sh 'ls -ltr'
-        
-        // Build the project and create a JAR file
-        echo 'Building the Spring Boot app'
-        sh 'cd spring-boot-app && mvn clean package'
-      }
-    }
+  stage('Checkout') {
+    steps {
+      echo 'Checking out the code'
+      git branch: 'main', url: 'https://github.com/akhilprabhu20/your-repo-name.git'
+      sh 'ls -l'  // List files in the workspace to check the directory structure
+     }
+   }
+
 
     stage('Static Code Analysis') {
       environment {
