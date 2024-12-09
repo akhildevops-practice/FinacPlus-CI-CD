@@ -8,7 +8,7 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 echo 'Cloning the repository...'
-                git 'https://github.com/akhilprabhu20/demo.git'
+                git 'https://github.com/akhildevops-practice/FinacPlus-CI-CD.git'
             }
         }
         stage('Build Docker Image') {
