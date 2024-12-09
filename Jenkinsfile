@@ -11,33 +11,31 @@ pipeline {
                 git 'https://github.com/akhildevops-practice/FinacPlus-CI-CD.git'
             }
         }
+        stages {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build the Docker image
-                    sh 'docker build -t akhilprabhu2005/spring-boot-demo .'
+                    sh 'docker build -t spring-boot-demo .'
                 }
             }
         }
-       stage('Push Docker Image') {
+        stage('Push Docker Image') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                        sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD'
-                        sh 'docker push spring-boot-demo'
-                    }
+                    sh 'docker push spring-boot-demo'
                 }
             }
         }
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Apply Kubernetes deployment and service files
                     sh 'kubectl apply -f k8s/deployment.yaml'
                     sh 'kubectl apply -f k8s/service.yaml'
                 }
             }
         }
+    }
+}
         stage('Verify Deployment') {
             steps {
                 script {
